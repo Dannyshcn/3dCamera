@@ -43,6 +43,7 @@ var deviceNamePath = path.join(__dirname, "/device-name");
 var cameraName = null;
 var ipAddress  = null;
 var hostName   = null;
+var extraWebCams = 4;
 
 
 function boot() {
@@ -74,6 +75,16 @@ socket.on('connect', function(){
     
     socket.emit('camera-online', {name: cameraName, ipAddress: ipAddress, version: version});
     
+    //Add support for multiple webcams
+    var _camRange  = 2 * ( extraWebCams + 1 );
+    
+    for ( var i=0; i<_camRange; i+=2 ){    //stride for 2
+        var camID = _cam + i;       //The camera ID
+        if ( fs.existsSync( camID )){
+            socket.emit('camera-online', {name: cameraName + '-' + camID, ipAddress: ipAddress, version: version});
+        }
+    }
+    
     // Setup a regular heartbeat interval
     var heartbeatIntervalID = setInterval(heartbeat, 1000);
 });
@@ -89,7 +100,7 @@ socket.on('take-photo', function(data){
 });
 
 socket.on('take-photo-webcam', function(data){
-    takeImage_WebCam();
+    takeImage_WebCam(data);
 });
 
 socket.on('update-software', function(data){
@@ -278,22 +289,23 @@ function takeImage() {
     imageProcess.on('exit', sendImage);
 }
 
-function takeImage_WebCam() {
+function takeImage_WebCam(data) {
     var _imageName = 'output';
     var _imageExt  = '.jpg';
     var _cam       = '/dev/video';
+    var _camRange  = 2 * ( extraWebCams + 1 );
     
-    for ( var i=0; i<10; i+=2 ){    //stride for 2
+    for ( var i=0; i<_camRange; i+=2 ){    //stride for 2
         var camID = _cam + i;       //The camera ID
         if ( fs.existsSync( camID )){
             console.log( "Taking a photo-WebCam: " + camID );
     
-            var timeInfo    = [
+            var timeInfo    = {
                 photoStartTime  : Date.now(),
                 lastReceiveTime : data.time,
                 takeId          : data.takeId,
-                _cameraName      : cameraName + camID;
-            ];            
+                _cameraName      : cameraName + '-' + camID
+            };            
             
             var imagePath = path.join( __dirname, _imageName + i.toString() + _imageExt );   //The image name
             var p = spawn('fswebcam',['-p','YUYV','-r','1920x1080','-i','0','-d',camID,'--no-banner',imagePath]);
