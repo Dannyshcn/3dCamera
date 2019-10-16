@@ -291,12 +291,12 @@ function takeImage_WebCam() {
     
     for ( int i=0; i<10; i+=2 ){    //stride for 2
         var camID = _cam + i;       //The camera ID
-        var imagePath = path.join(__dirname, '/', _imageName, i, _imageExt );   //The image name
         if ( fs.existsSync( camID )){
+            var imagePath = path.join( __dirname, _imageName + i.toString() + _imageExt );   //The image name
             var p = spawn('fswebcam',['-p','YUYV','-r','1920x1080','-i','0','-d',camID,'--no-banner',imagePath]);
             // The image should take about 5 seconds, if its going after 10 kill it!
-            setTimeout(function(){ p.kill()}, 5000);
-            p.on('exit', function(code){sendImage_WebCam( code, imagePath );});
+            setTimeout( function(){ p.kill()}, 5000 );
+            p.on( 'exit', function( code ){ sendImage_WebCam( code, imagePath );});
         }
     }
 }
