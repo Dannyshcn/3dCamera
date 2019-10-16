@@ -89,12 +89,6 @@ socket.on('take-photo', function(data){
 });
 
 socket.on('take-photo-webcam', function(data){
-    console.log("Taking a photo");
-    
-    photoStartTime  = Date.now();
-    lastReceiveTime = data.time
-    takeId          = data.takeId;
-    
     takeImage_WebCam();
 });
 
@@ -211,7 +205,7 @@ function sendImage(code) {
     });
 }
 
-function sendImage_WebCam(code, imagePath) {
+function sendImage_WebCam( code, imagePath, timeInfo ) {
     
     //console.log("Photo capture complete, status code:" + code);
     
@@ -229,14 +223,14 @@ function sendImage_WebCam(code, imagePath) {
             return;
         }
         
-        var totalDelay = Date.now() - lastReceiveTime;
-        var imageDelay = Date.now() - photoStartTime;
+        var totalDelay = Date.now() - timeInfo.lastReceiveTime;
+        var imageDelay = Date.now() - timeInfo.photoStartTime;
         socket.emit('new-photo', {
             //data: buffer.toString('base64'), 
             takeId:takeId, 
-            startTime:lastReceiveTime, 
+            startTime:timeInfo.lastReceiveTime, 
             time:Date.now(), 
-            photoStartTime:photoStartTime,
+            photoStartTime:timeInfo.photoStartTime,
             totalDelay: totalDelay,
             imageDelay: imageDelay,
             fileName: fileName
@@ -247,15 +241,15 @@ function sendImage_WebCam(code, imagePath) {
     
     // Post the image data via an http request
     var form = new FormData();
-    form.append('takeId', takeId);
-    form.append('startTime', lastReceiveTime);
-    form.append('cameraName', cameraName);
+    form.append('takeId', timeInfo.takeId);
+    form.append('startTime', timeInfo.lastReceiveTime);
+    form.append('cameraName', timeInfo._cameraName);
     form.append('fileName', fileName);
     form.append('image', fs.createReadStream(imagePath));
 
     form.submit(httpServer + '/new-image', function(err, res) {
         if (err) {
-            socket.emit('photo-error', {takeId:takeId});
+            socket.emit('photo-error', {takeId:timeInfo.takeId});
         } else {
             console.log("Image uploaded");
         }
@@ -292,11 +286,20 @@ function takeImage_WebCam() {
     for ( var i=0; i<10; i+=2 ){    //stride for 2
         var camID = _cam + i;       //The camera ID
         if ( fs.existsSync( camID )){
+            console.log( "Taking a photo-WebCam: " + camID );
+    
+            var timeInfo    = [
+                photoStartTime  : Date.now(),
+                lastReceiveTime : data.time,
+                takeId          : data.takeId,
+                _cameraName      : cameraName + camID;
+            ];            
+            
             var imagePath = path.join( __dirname, _imageName + i.toString() + _imageExt );   //The image name
             var p = spawn('fswebcam',['-p','YUYV','-r','1920x1080','-i','0','-d',camID,'--no-banner',imagePath]);
             // The image should take about 5 seconds, if its going after 10 kill it!
             setTimeout( function(){ p.kill()}, 5000 );
-            p.on( 'exit', function( code ){ sendImage_WebCam( code, imagePath );});
+            p.on( 'exit', function( code ){ sendImage_WebCam( code, imagePath, timeInfo );});
         }
     }
 }
