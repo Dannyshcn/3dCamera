@@ -1,5 +1,5 @@
 
-var version = '1.28';
+var version = '1.30';
 
 var args = process.argv.slice(2);
 
@@ -285,25 +285,19 @@ function takeImage() {
 }
 
 function takeImage_WebCam() {
-    var args = [
-        //'-w', 2592,   // width
-        //'-h', 1944,  // height
-        //'-t', 100,  // how long should taking the picture take?
-        '-q', 90,     // quality
-        '-awb', 'fluorescent', 
-        '-o', getAbsoluteImagePath()   // path + name
-    ];
-    if ( fs.existsSync('/dev/video0')){
-        var p1 = spawn('fswebcam', '-p','YUYV','-r','1920x1080','-i','0','-d','/dev/video0','--no-banner','/home/pi/image0.jpg');
-        // The image should take about 5 seconds, if its going after 10 kill it!
-        setTimeout(function(){ p1.kill()}, 5000);
-        p1.on('exit', function(code){sendImage_WebCam(code,'/home/pi/image0.jpg');});
-    }
-        if ( fs.existsSync('/dev/video2')){
-        var p2 = spawn('fswebcam', '-p','YUYV','-r','1920x1080','-i','0','-d','/dev/video2','--no-banner','/home/pi/image2.jpg');
-        // The image should take about 5 seconds, if its going after 10 kill it!
-        setTimeout(function(){ p2.kill()}, 5000);
-        p2.on('exit', function(code){sendImage_WebCam(code,'/home/pi/image2.jpg');});
+    var _imageName = 'output';
+    var _imageExt  = '.jpg';
+    var _cam       = '/dev/video';
+    
+    for ( int i=0; i<10; i+=2 ){    //stride for 2
+        var camID = _cam + i;       //The camera ID
+        var imagePath = path.join(__dirname, '/', _imageName, i, _imageExt );   //The image name
+        if ( fs.existsSync( camID )){
+            var p = spawn('fswebcam',['-p','YUYV','-r','1920x1080','-i','0','-d',camID,'--no-banner',imagePath]);
+            // The image should take about 5 seconds, if its going after 10 kill it!
+            setTimeout(function(){ p.kill()}, 5000);
+            p.on('exit', function(code){sendImage_WebCam( code, imagePath );});
+        }
     }
 }
 
