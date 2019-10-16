@@ -88,6 +88,16 @@ socket.on('take-photo', function(data){
     takeImage();
 });
 
+socket.on('take-photo-webcam', function(data){
+    console.log("Taking a photo");
+    
+    photoStartTime  = Date.now();
+    lastReceiveTime = data.time
+    takeId          = data.takeId;
+    
+    takeImage_WebCam();
+});
+
 socket.on('update-software', function(data){
     console.log("Updating software");
     
@@ -201,6 +211,63 @@ function sendImage(code) {
     });
 }
 
+function sendImage_WebCam(code, imagePath) {
+    
+    //console.log("Photo capture complete, status code:" + code);
+    
+    // A success should come back with exit code 0
+    if (code !== 0) {
+        socket.emit('photo-error', {takeId:takeId});
+        return;
+    }
+    
+    socket.emit('sending-photo', {takeId:takeId});
+    
+    fs.readFile(imagePath, function(err, buffer){
+        if (typeof buffer == 'undefined') {
+            socket.emit('photo-error', {takeId:takeId});
+            return;
+        }
+        
+        var totalDelay = Date.now() - lastReceiveTime;
+        var imageDelay = Date.now() - photoStartTime;
+        socket.emit('new-photo', {
+            //data: buffer.toString('base64'), 
+            takeId:takeId, 
+            startTime:lastReceiveTime, 
+            time:Date.now(), 
+            photoStartTime:photoStartTime,
+            totalDelay: totalDelay,
+            imageDelay: imageDelay,
+            fileName: fileName
+        });
+    });
+    
+    var fileName = guid() + '.jpg';
+    
+    // Post the image data via an http request
+    var form = new FormData();
+    form.append('takeId', takeId);
+    form.append('startTime', lastReceiveTime);
+    form.append('cameraName', cameraName);
+    form.append('fileName', fileName);
+    form.append('image', fs.createReadStream(imagePath));
+
+    form.submit(httpServer + '/new-image', function(err, res) {
+        if (err) {
+            socket.emit('photo-error', {takeId:takeId});
+        } else {
+            console.log("Image uploaded");
+        }
+        
+        fs.unlink(imagePath, function () {
+            // file deleted
+        });
+        
+        res.resume();
+    });
+}
+
 function takeImage() {
     var args = [
         //'-w', 2592,   // width
@@ -215,6 +282,29 @@ function takeImage() {
     setTimeout(function(){ imageProcess.kill()}, 10000);
     
     imageProcess.on('exit', sendImage);
+}
+
+function takeImage_WebCam() {
+    var args = [
+        //'-w', 2592,   // width
+        //'-h', 1944,  // height
+        //'-t', 100,  // how long should taking the picture take?
+        '-q', 90,     // quality
+        '-awb', 'fluorescent', 
+        '-o', getAbsoluteImagePath()   // path + name
+    ];
+    if ( fs.existsSync('/dev/video0')){
+        var p1 = spawn('fswebcam', '-p','YUYV','-r','1920x1080','-i','0','-d','/dev/video0','--no-banner','/home/pi/image0.jpg');
+        // The image should take about 5 seconds, if its going after 10 kill it!
+        setTimeout(function(){ p1.kill()}, 5000);
+        p1.on('exit', function(code){sendImage_WebCam(code,'/home/pi/image0.jpg');});
+    }
+        if ( fs.existsSync('/dev/video2')){
+        var p2 = spawn('fswebcam', '-p','YUYV','-r','1920x1080','-i','0','-d','/dev/video2','--no-banner','/home/pi/image2.jpg');
+        // The image should take about 5 seconds, if its going after 10 kill it!
+        setTimeout(function(){ p2.kill()}, 5000);
+        p2.on('exit', function(code){sendImage_WebCam(code,'/home/pi/image2.jpg');});
+    }
 }
 
 // To update the software we run git pull and npm install and then forcibily kill this process
