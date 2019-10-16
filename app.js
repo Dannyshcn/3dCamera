@@ -289,7 +289,7 @@ function takeImage_WebCam() {
     var _imageExt  = '.jpg';
     var _cam       = '/dev/video';
     
-    for ( int i=0; i<10; i+=2 ){    //stride for 2
+    for ( var i=0; i<10; i+=2 ){    //stride for 2
         var camID = _cam + i;       //The camera ID
         if ( fs.existsSync( camID )){
             var imagePath = path.join( __dirname, _imageName + i.toString() + _imageExt );   //The image name
