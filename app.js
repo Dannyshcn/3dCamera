@@ -76,14 +76,14 @@ socket.on('connect', function(){
     socket.emit('camera-online', {name: cameraName, ipAddress: ipAddress, version: version});
     
     //Add support for multiple webcams
-    var _camRange  = 2 * ( extraWebCams + 1 );
+    //var _camRange  = 2 * ( extraWebCams + 1 );
     
-    for ( var i=0; i<_camRange; i+=2 ){    //stride for 2
-        var camID = _cam + i;       //The camera ID
-        if ( fs.existsSync( camID )){
-            socket.emit('camera-online', {name: cameraName + '-' + camID, ipAddress: ipAddress, version: version});
-        }
-    }
+    //for ( var i=0; i<_camRange; i+=2 ){    //stride for 2
+    //    var camID = _cam + i;       //The camera ID
+    //    if ( fs.existsSync( camID )){
+    //        socket.emit('camera-online', {name: cameraName + '-' + camID, ipAddress: ipAddress, version: version});
+    //    }
+    //}
     
     // Setup a regular heartbeat interval
     var heartbeatIntervalID = setInterval(heartbeat, 1000);
