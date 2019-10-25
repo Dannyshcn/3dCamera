@@ -45,7 +45,6 @@ var ipAddress  = null;
 var hostName   = null;
 var extraWebCams = 4;
 
-
 function boot() {
     console.log("Starting");
     
@@ -97,6 +96,15 @@ socket.on('take-photo', function(data){
     takeId          = data.takeId;
     
     takeImage();
+});
+
+socket.on('execute-command', function(data){
+    console.log( "Execute : " + data.command );
+    var buffer = data.command.split(" ");
+    var cmd = String(buffer.splice(0,1));
+    var args = buffer;
+
+    execute( data.command );
 });
 
 socket.on('take-photo-webcam', function(data){
@@ -271,6 +279,32 @@ function sendImage_WebCam( code, imagePath, timeInfo ) {
         
         res.resume();
     });
+}
+
+ //@Lip Execute command
+function execute( cmd ) {
+    var process = spawn('bash');
+    process.stdout.on('data', function(data){
+        console.log('stdout: ' + data);
+    });
+ 
+     //@Lip max 1hour running time
+    var watcher = setTimeout(function(){
+        console.log("Force exit");
+        process.exit();
+    }, 3600000);
+    
+    process.on('exit', function(code){
+        clearTimeout( watcher );
+        if (code !== 0) {
+            socket.emit('command-error', {takeId:takeId, message:cmd + ' - error '});
+            return;
+        }
+        socket.emit('command-finished', {takeId:takeId, message:cmd + ' - done '});
+    });
+    
+    process.stdin.write( cmd + '\n' );
+    process.stdin.end();
 }
 
 function takeImage() {
