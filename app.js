@@ -1,5 +1,5 @@
 
-var version = '1.30';
+var version = '1.31';
 
 var args = process.argv.slice(2);
 
