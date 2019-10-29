@@ -109,7 +109,14 @@ socket.on('execute-command', function(data){
 
 socket.on('lights-switch', function(data){
     if ( fs.existsSync('led_control.py')) { //file exists
-         execute( 'python led_control.py ' + data  );
+        // execute( 'python led_control.py ' + data  );
+       if ( 'on' == data ) {
+           execute( 'python led_control.py -s on' );
+       }else{
+           execute( 'pkill -15 -f "python led_control.py"' );
+       }
+
+       console.log( "Lights :" + data );
     }
 });
 
