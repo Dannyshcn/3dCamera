@@ -107,6 +107,12 @@ socket.on('execute-command', function(data){
     execute( data.command );
 });
 
+socket.on('lights-switch', function(data){
+    if ( fs.existsSync('led_control.py')) { //file exists
+         execute( 'python led_control.py ' + data  );
+    }
+});
+
 socket.on('take-photo-webcam', function(data){
     takeImage_WebCam(data);
 });
