@@ -326,9 +326,10 @@ function takeImage() {
         //'-h', 1944,  // height
         //'-t', 100,  // how long should taking the picture take?
         '-q', 100,     // quality
-	'-fli', 'auto',
+	'-fli', 'auto',	//Anti flickering
 	'-gps',
-	'vf',
+	'-vf',		//Vertial flip
+	'-r',		//Raw layer
         '-awb', 'fluorescent', 
         '-o', getAbsoluteImagePath()   // path + name
     ];
