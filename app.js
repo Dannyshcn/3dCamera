@@ -108,12 +108,12 @@ socket.on('execute-command', function(data){
 });
 
 socket.on('lights-switch', function(data){
-    if ( fs.existsSync('led_control.py')) { //file exists
+    if ( fs.existsSync('/home/pi/3dCamera/led_control.py')) { //file exists
         // execute( 'python led_control.py ' + data  );
        if ( 'on' == data ) {
-           execute( 'python led_control.py -s on' );
+           execute( 'python /home/pi/3dCamera/led_control.py -s on' );
        }else{
-           execute( 'pkill -15 -f "python led_control.py"' );
+           execute( 'pkill -15 -f "python /home/pi/3dCamera/led_control.py"' );
        }
 
        console.log( "Lights :" + data );
@@ -325,7 +325,8 @@ function takeImage() {
         //'-w', 2592,   // width
         //'-h', 1944,  // height
         //'-t', 100,  // how long should taking the picture take?
-        '-q', 90,     // quality
+        '-q', 100,     // quality
+	'-fli', 'auto',
         '-awb', 'fluorescent', 
         '-o', getAbsoluteImagePath()   // path + name
     ];
