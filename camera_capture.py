@@ -3,7 +3,7 @@ import datetime
 
 cmd_gphoto2 = "gphoto2"
 arg_capture = "--capture-image-and-download"
-arg_download = "--get-all-files"
+arg_download = "--filename=/home/pi/Pictures/canon_4000D.%C" #"--get-all-files"
 arg_clear	 = "--delete-all-files"
 arg_recur	 = "-R"
 arg_folder	 = "--folder=/store_00020001/DCIM/104CANON"
@@ -32,5 +32,5 @@ subprocess.call(["gphoto2",
 #subprocess.call(["gphoto2", "--auto-detect"])
 
 #subprocess.call([cmd_gphoto2, arg_folder, arg_clear, arg_recur])
-subprocess.call([cmd_gphoto2, arg_capture])
+subprocess.call([cmd_gphoto2, arg_capture, arg_download])
 #subprocess.call(["gphoto2", "--list-files"])
