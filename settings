@@ -2,4 +2,4 @@ ptp2_ip=guid=dc:81:02:5b:8c:79:9a:83:c4:ad:25:5c:52:77:8e:d4
 ptp2=capturetarget=card
 libgphoto=cached-images=2
 gphoto2=model=Canon EOS 4000D
-gphoto2=filename=/home/pi/Pictures/%Y-%m-%d_%H-%M-%S_%f.%C
+gphoto2=filename=/home/pi/Pictures/canon_4000D.%C
