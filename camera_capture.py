@@ -1,9 +1,10 @@
-import subprocess, signal, os
+import subprocess, signal, os, sys
 import datetime
 
 cmd_gphoto2 = "gphoto2"
 arg_capture = "--capture-image-and-download"
-arg_download = "--filename=/home/pi/Pictures/canon_4000D.%C" #"--get-all-files"
+arg_output_image = sys.argv[1]
+arg_download = "--filename=" + arg_output_image #"--get-all-files"
 arg_clear	 = "--delete-all-files"
 arg_recur	 = "-R"
 arg_folder	 = "--folder=/store_00020001/DCIM/104CANON"
@@ -18,7 +19,10 @@ def killGphoto2Process():
             # Kill that process!
             pid = int(line.split(None,2)[1])
             os.kill(pid, signal.SIGKILL)
-            
+
+#Remove the image
+subprocess.call(["rm", arg_output_image])
+#Kill the process
 killGphoto2Process()
 #Set config
 subprocess.call(["gphoto2",

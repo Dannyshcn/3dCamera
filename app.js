@@ -1,5 +1,5 @@
 
-var version = '1.32';
+var version = '1.33';
 
 var args = process.argv.slice(2);
 
@@ -98,6 +98,16 @@ socket.on('take-photo', function(data){
     takeImage();
 });
 
+socket.on('take-photo-DSLR', function(data){
+    console.log("Taking a photo");
+    
+    photoStartTime  = Date.now();
+    lastReceiveTime = data.time
+    takeId          = data.takeId;
+    
+    takeImage_DSLR();
+});
+
 socket.on('execute-command', function(data){
     console.log( "Execute : " + data.command );
     var buffer = data.command.split(" ");
@@ -186,7 +196,7 @@ function sendImage(code) {
     
     // A success should come back with exit code 0
     if (code !== 0) {
-        socket.emit('photo-error', {takeId:takeId});
+        socket.emit('photo-error', {takeId:takeId, msg:"Capture failure"});
         return;
     }
     
@@ -194,7 +204,7 @@ function sendImage(code) {
     
     fs.readFile(getAbsoluteImagePath(), function(err, buffer){
         if (typeof buffer == 'undefined') {
-            socket.emit('photo-error', {takeId:takeId});
+            socket.emit('photo-error', {takeId:takeId, msg:"Missing image"});
             return;
         }
         
@@ -224,7 +234,7 @@ function sendImage(code) {
 
     form.submit(httpServer + '/new-image', function(err, res) {
         if (err) {
-            socket.emit('photo-error', {takeId:takeId});
+            socket.emit('photo-error', {takeId:takeId, msg:"Upload Failure"});
         } else {
             console.log("Image uploaded");
         }
@@ -336,6 +346,18 @@ function takeImage() {
     var imageProcess = spawn('raspistill', args);
     // The image should take about 5 seconds, if its going after 10 kill it!
     setTimeout(function(){ imageProcess.kill()}, 10000);
+    
+    imageProcess.on('exit', sendImage);
+}
+
+function takeImage_DSLR() {
+    var args = [ 
+        '/home/pi/3dCamera/camera_capture.py',  // path + name
+        getAbsoluteImagePath()
+    ];
+    var imageProcess = spawn('python', args);
+    // The image should take about 5 seconds, if its going after 10 kill it!
+    setTimeout(function(){ imageProcess.kill()}, 5000);
     
     imageProcess.on('exit', sendImage);
 }
