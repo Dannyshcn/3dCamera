@@ -305,7 +305,7 @@ function sendImage_WebCam( code, imagePath, timeInfo ) {
 }
 
  //@Lip Execute command
-function execute( cmd ) {
+function execute( cmd, callback ) {
     var process = spawn('bash');
     process.stdout.on('data', function(data){
         console.log('stdout: ' + data);
@@ -317,14 +317,18 @@ function execute( cmd ) {
         process.exit();
     }, 3600000);
     
-    process.on('exit', function(code){
-        clearTimeout( watcher );
-        if (code !== 0) {
-            socket.emit('command-error', {takeId:takeId, message:cmd + ' - error '});
-            return;
-        }
-        socket.emit('command-finished', {takeId:takeId, message:cmd + ' - done '});
-    });
+    if ( undefined == callback ){
+        callback = function(code){
+            clearTimeout( watcher );
+            if (code !== 0) {
+                socket.emit('command-error', {takeId:takeId, message:cmd + ' - error '});
+                return;
+            }
+            socket.emit('command-finished', {takeId:takeId, message:cmd + ' - done '});
+        };
+    }
+    
+    process.on('exit', callback );
     
     process.stdin.write( cmd + '\n' );
     process.stdin.end();
@@ -355,11 +359,12 @@ function takeImage_DSLR() {
         '/home/pi/3dCamera/camera_capture.py',  // path + name
         getAbsoluteImagePath()
     ];
-    var imageProcess = spawn('python', args);
+    execute( 'python /home/pi/3dCamera/camera_capture.py ' + getAbsoluteImagePath(), sendImage);
+    //var imageProcess = spawn('python', args);
     // The image should take about 5 seconds, if its going after 10 kill it!
-    setTimeout(function(){ imageProcess.kill()}, 10000);
+    //setTimeout(function(){ imageProcess.kill()}, 10000);
     
-    imageProcess.on('exit', sendImage);
+    //imageProcess.on('exit', sendImage);
 }
 
 function takeImage_WebCam(data) {
