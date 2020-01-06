@@ -357,7 +357,7 @@ function takeImage_DSLR() {
     ];
     var imageProcess = spawn('python', args);
     // The image should take about 5 seconds, if its going after 10 kill it!
-    setTimeout(function(){ imageProcess.kill()}, 5000);
+    setTimeout(function(){ imageProcess.kill()}, 10000);
     
     imageProcess.on('exit', sendImage);
 }
