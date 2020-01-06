@@ -204,7 +204,7 @@ function sendImage(code) {
     
     fs.readFile(getAbsoluteImagePath(), function(err, buffer){
         if (typeof buffer == 'undefined') {
-            socket.emit('photo-error', {takeId:takeId, msg:"Missing image " + ipAddress "-" + getAbsoluteImagePath()});
+            socket.emit('photo-error', {takeId:takeId, msg:"Missing image " + ipAddress + "-" + getAbsoluteImagePath()});
             return;
         }
         
