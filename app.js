@@ -359,12 +359,12 @@ function takeImage_DSLR() {
         '/home/pi/3dCamera/camera_capture.py',  // path + name
         getAbsoluteImagePath()
     ];
-    execute( 'python /home/pi/3dCamera/camera_capture.py ' + getAbsoluteImagePath(), sendImage);
-    //var imageProcess = spawn('python', args);
+    //execute( 'python /home/pi/3dCamera/camera_capture.py ' + getAbsoluteImagePath(), sendImage);
+    var imageProcess = spawn('python', args);
     // The image should take about 5 seconds, if its going after 10 kill it!
-    //setTimeout(function(){ imageProcess.kill()}, 10000);
+    setTimeout(function(){ imageProcess.kill()}, 7000);
     
-    //imageProcess.on('exit', sendImage);
+    imageProcess.on('exit', sendImage);
 }
 
 function takeImage_WebCam(data) {
