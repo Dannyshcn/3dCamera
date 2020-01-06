@@ -196,7 +196,7 @@ function sendImage(code) {
     
     // A success should come back with exit code 0
     if (code !== 0) {
-        socket.emit('photo-error', {takeId:takeId, msg:"Capture failure"});
+        socket.emit('photo-error', {takeId:takeId, msg:"Capture failure-" + ipAddress });
         return;
     }
     
