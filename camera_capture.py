@@ -1,6 +1,5 @@
 import subprocess, signal, os, sys
 import datetime
-import time
 
 cmd_gphoto2 = "gphoto2"
 arg_capture = "--capture-image-and-download"
@@ -21,10 +20,8 @@ def killGphoto2Process():
             pid = int(line.split(None,2)[1])
             os.kill(pid, signal.SIGKILL)
 
-time.sleep(2.0)
-
 #Remove the image
-subprocess.call(["rm", arg_output_image])
+#subprocess.call(["rm", arg_output_image])
 #Kill the process
 killGphoto2Process()
 #Set config
