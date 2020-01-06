@@ -204,7 +204,7 @@ function sendImage(code) {
     
     fs.readFile(getAbsoluteImagePath(), function(err, buffer){
         if (typeof buffer == 'undefined') {
-            socket.emit('photo-error', {takeId:takeId, msg:"Missing image"});
+            socket.emit('photo-error', {takeId:takeId, msg:"Missing image" + getAbsoluteImagePath()});
             return;
         }
         
