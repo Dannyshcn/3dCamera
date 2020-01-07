@@ -1,5 +1,5 @@
 
-var version = '1.33';
+var version = '1.34';
 
 var args = process.argv.slice(2);
 
@@ -98,7 +98,7 @@ socket.on('take-photo', function(data){
     takeImage();
 });
 
-socket.on('take-photo-DSLR2', function(data){
+socket.on('take-photo-DSLR', function(data){
     console.log("Taking a photo");
     
     photoStartTime  = Date.now();
@@ -342,7 +342,7 @@ function takeImage() {
         '-q', 100,     // quality
 	'-fli', 'auto',	//Anti flickering
 	'-gps',
-	'-vf',		//Vertial flip
+	//'-vf',		//Vertial flip
 	'-r',		//Raw layer
         '-awb', 'fluorescent', 
         '-o', getAbsoluteImagePath()   // path + name
