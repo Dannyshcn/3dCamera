@@ -98,7 +98,7 @@ socket.on('take-photo', function(data){
     takeImage();
 });
 
-socket.on('take-photo-DSLR', function(data){
+socket.on('take-photo-DSLR2', function(data){
     console.log("Taking a photo");
     
     photoStartTime  = Date.now();
@@ -356,15 +356,55 @@ function takeImage() {
 
 function takeImage_DSLR() {
     var args = [ 
-        '/home/pi/3dCamera/camera_capture.py',  // path + name
-        getAbsoluteImagePath()
+        //'/home/pi/3dCamera/camera_capture.py',  // path + name
+        //getAbsoluteImagePath()
     ];
     //execute( 'python /home/pi/3dCamera/camera_capture.py ' + getAbsoluteImagePath(), sendImage);
-    var imageProcess = spawn('python', args);
+    //var imageProcess = spawn('python', args);
     // The image should take about 5 seconds, if its going after 10 kill it!
-    setTimeout(function(){ imageProcess.kill()}, 7000);
+    //setTimeout(function(){ imageProcess.kill()}, 7000);
     
-    imageProcess.on('exit', sendImage);
+    //imageProcess.on('exit', sendImage);
+    
+    //@Lip copied from execute()
+	var _process;
+	var isWin = process.platform === "win32";
+	if ( !isWin ) {
+		_process = spawn('bash');
+	}else{
+		_process = spawn('cmd');
+	}
+    _process.on('exit', function(code){
+        args = [
+            "--set-config", "datetime=now",
+            "--set-config", "artist=Lip",
+            "--set-config", "capturetarget=1",
+            "--set-config", "focusmode=0",
+            "--capture-image-and-download",
+            "--filename="+getAbsoluteImagePath()];
+        
+        var imageProcess = spawn('gphoto2', args);
+        // The image should take about 5 seconds, if its going after 10 kill it!
+        setTimeout(function(){ imageProcess.kill()}, 7000);
+    
+        imageProcess.on('exit', sendImage);
+    });
+    
+    _process.stdout.on('data', function(data){
+        var info = data.toString().split(/[\r\n]+/);
+        for ( var i=0; i<info.length; ++i ){
+            var pid  = info[i].split(" ")[6];
+            if ( undefined == pid ){
+                continue;
+            }
+            console.log( info[i] + "\nPID is at " + i + " is " + pid );
+            _process.stdin.write( 'kill ' + pid + "\n" );
+        }
+
+        _process.stdin.end();   //End the stream
+    });
+    _process.stdin.write( 'ps aux | grep gvfsd-gphoto2\n' );
+    
 }
 
 function takeImage_WebCam(data) {

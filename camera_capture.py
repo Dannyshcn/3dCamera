@@ -21,7 +21,7 @@ def killGphoto2Process():
             os.kill(pid, signal.SIGKILL)
 
 #Remove the image
-#subprocess.call(["rm", arg_output_image])
+subprocess.call(["rm", arg_output_image])
 #Kill the process
 killGphoto2Process()
 #Set config
