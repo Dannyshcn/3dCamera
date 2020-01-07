@@ -344,7 +344,7 @@ function takeImage() {
 	'-gps',
 	//'-vf',		//Vertial flip
 	'-r',		//Raw layer
-        '-awb', 'fluorescent', 
+        '-awb', 'incandescent', //'fluorescent', 
         '-o', getAbsoluteImagePath()   // path + name
     ];
     var imageProcess = spawn('raspistill', args);
