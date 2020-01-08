@@ -1,5 +1,5 @@
 
-var version = '1.34';
+var version = '1.35';
 
 var args = process.argv.slice(2);
 
@@ -392,7 +392,7 @@ function takeImage_DSLR() {
         // The image should take about 5 seconds, if its going after 10 kill it!
         setTimeout(function(){ 
             imageProcess.kill();
-            }, 7000);
+            }, 5000);
 
         imageProcess.on('exit', sendImage);
     });
@@ -410,7 +410,7 @@ function takeImage_DSLR() {
 
         _process.stdin.end();   //End the stream
     });
-    _process.stdin.write( 'ps aux | grep gvfsd-gphoto2\n' );
+    _process.stdin.write( 'ps aux | grep gvfs-gphoto2\n' );
     
 }
 
