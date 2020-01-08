@@ -1,5 +1,5 @@
 
-var version = '1.36';
+var version = '1.37';
 
 var args = process.argv.slice(2);
 
@@ -386,9 +386,9 @@ function takeImage_DSLR() {
             "--filename="+getAbsoluteImagePath()];
         
         var imageProcess = spawn('gphoto2', args);
-        imageProcess.stdout.on('data', function(data) {
-          console.log( "--" + data.toString());
-        });
+        //imageProcess.stdout.on('data', function(data) {
+        //  console.log( "--" + data.toString());
+        //});
         // The image should take about 5 seconds, if its going after 10 kill it!
         setTimeout(function(){ 
             imageProcess.kill();
@@ -405,7 +405,7 @@ function takeImage_DSLR() {
             if ( undefined == pid ){
                 continue;
             }
-            console.log( info[i] + "\nPID is at " + i + " is " + pid );
+            //console.log( info[i] + "\nPID is at " + i + " is " + pid );
             _process.stdin.write( 'kill ' + pid + "\n" );
         }
 
