@@ -222,8 +222,8 @@ function sendImage(code) {
         });
     });
     
-    //var fileName = guid() + '.jpg';
-    var fileName = cameraName + '.jpg';
+    var fileName = guid() + '.jpg';
+    //var fileName = cameraName + '.jpg';
     
     // Post the image data via an http request
     var form = new FormData();
