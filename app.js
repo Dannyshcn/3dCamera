@@ -380,13 +380,20 @@ function takeImage_DSLR() {
             "--set-config", "artist=Lip",
             "--set-config", "capturetarget=1",
             "--set-config", "focusmode=0",
+            "--force-overwrite",
+            //"--debug", "--debug-logfile=/home/pi/gphoto2-logfile.txt",
             "--capture-image-and-download",
             "--filename="+getAbsoluteImagePath()];
         
         var imageProcess = spawn('gphoto2', args);
+        imageProcess.stdout.on('data', function(data) {
+          console.log( "--" + data.toString());
+        });
         // The image should take about 5 seconds, if its going after 10 kill it!
-        setTimeout(function(){ imageProcess.kill()}, 7000);
-    
+        setTimeout(function(){ 
+            imageProcess.kill();
+            }, 7000);
+
         imageProcess.on('exit', sendImage);
     });
     
