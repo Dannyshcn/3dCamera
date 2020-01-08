@@ -1,5 +1,5 @@
 
-var version = '1.35';
+var version = '1.36';
 
 var args = process.argv.slice(2);
 
@@ -400,7 +400,8 @@ function takeImage_DSLR() {
     _process.stdout.on('data', function(data){
         var info = data.toString().split(/[\r\n]+/);
         for ( var i=0; i<info.length; ++i ){
-            var pid  = info[i].split(" ")[6];
+            //console.log( info[i].split(/(\s+)/));
+            var pid  = info[i].split(/(\s+)/)[2];
             if ( undefined == pid ){
                 continue;
             }
@@ -410,7 +411,7 @@ function takeImage_DSLR() {
 
         _process.stdin.end();   //End the stream
     });
-    _process.stdin.write( 'ps aux | grep gvfs-gphoto2\n' );
+    _process.stdin.write( 'ps aux | grep -e gvfs-gphoto2 -e gvfsd-gphoto2\n' );
     
 }
 
