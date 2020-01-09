@@ -337,14 +337,14 @@ function execute( cmd, callback ) {
 
 function takeImage() {
     var args = [
-        //'-w', 2460,   // width
-        //'-h', 1848,  // height
+        '-w', 2460,   // width
+        '-h', 1848,  // height
         //'-t', 100,  // how long should taking the picture take?
         '-q', 100,     // quality
 	'-fli', 'auto',	//Anti flickering
 	'-gps',
 	//'-vf',		//Vertial flip
-	'-roi', '0.5,0.5,0.75,0.75',
+	'-roi', '0.25,0.25,0.75,0.75',
 	//'-r',		//Raw layer
         '-awb', 'incandescent', //'fluorescent', 
         '-o', getAbsoluteImagePath()   // path + name
