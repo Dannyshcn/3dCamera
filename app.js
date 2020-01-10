@@ -403,6 +403,8 @@ function takeImage() {
         '-h', 1848,  // height
         //'-t', 100,  // how long should taking the picture take?
         '-q', 100,     // quality
+        '-ISO', 400,    //ISO
+        '-ss', 166667,  //Shutter speed
 	'-fli', 'auto',	//Anti flickering
 	'-gps',
 	//'-vf',		//Vertial flip
