@@ -175,6 +175,10 @@ function getAbsoluteImagePath() {
     return path.join(__dirname, imagePath, imageName);
 }
 
+function getAbsoluteImagePath_DSLR() {
+    return path.join(__dirname, imagePath, "DSLR_" + imageName);
+}
+
 function lookupIp() {
     var ifaces = os.networkInterfaces();
     Object.keys(ifaces).forEach(function (ifname) {
@@ -241,6 +245,64 @@ function sendImage(code) {
         }
         
         fs.unlink(getAbsoluteImagePath(), function () {
+            // file deleted
+        });
+        
+        res.resume();
+    });
+}
+
+function sendImage_DSLR(code) {
+    
+    //console.log("Photo capture complete, status code:" + code);
+    
+    // A success should come back with exit code 0
+    if (code !== 0) {
+        socket.emit('photo-error', {takeId:takeId, msg:"Capture failure(DSLR)-" + ipAddress });
+        return;
+    }
+    
+    socket.emit('sending-photo', {takeId:takeId});
+    
+    fs.readFile(getAbsoluteImagePath_DSLR(), function(err, buffer){
+        if (typeof buffer == 'undefined') {
+            socket.emit('photo-error', {takeId:takeId, msg:"Missing image(DSLR)-" + ipAddress + "-" + getAbsoluteImagePath_DSLR()});
+            return;
+        }
+        
+        var totalDelay = Date.now() - lastReceiveTime;
+        var imageDelay = Date.now() - photoStartTime;
+        socket.emit('new-photo', {
+            //data: buffer.toString('base64'), 
+            takeId:takeId, 
+            startTime:lastReceiveTime, 
+            time:Date.now(), 
+            photoStartTime:photoStartTime,
+            totalDelay: totalDelay,
+            imageDelay: imageDelay,
+            fileName: fileName
+        });
+    });
+    
+    //var fileName = guid() + '.jpg';
+    var fileName = cameraName + '_DSLR.jpg';
+  
+    // Post the image data via an http request
+    var form = new FormData();
+    form.append('takeId', takeId);
+    form.append('startTime', lastReceiveTime);
+    form.append('cameraName', cameraName);
+    form.append('fileName', fileName);
+    form.append('image', fs.createReadStream(getAbsoluteImagePath_DSLR()));
+
+    form.submit(httpServer + '/new-image', function(err, res) {
+        if (err) {
+            socket.emit('photo-error', {takeId:takeId, msg:"Upload Failure(DSLR)"});
+        } else {
+            console.log("Image uploaded(DSLR)");
+        }
+        
+        fs.unlink(getAbsoluteImagePath_DSLR(), function () {
             // file deleted
         });
         
@@ -385,7 +447,7 @@ function takeImage_DSLR() {
             "--force-overwrite",
             //"--debug", "--debug-logfile=/home/pi/gphoto2-logfile.txt",
             "--capture-image-and-download",
-            "--filename="+getAbsoluteImagePath()];
+            "--filename="+getAbsoluteImagePath_DSLR()];
         
         var imageProcess = spawn('gphoto2', args);
         //imageProcess.stdout.on('data', function(data) {
@@ -396,7 +458,7 @@ function takeImage_DSLR() {
             imageProcess.kill();
             }, 5000);
 
-        imageProcess.on('exit', sendImage);
+        imageProcess.on('exit', sendImage_DSLR);
     });
     
     _process.stdout.on('data', function(data){
