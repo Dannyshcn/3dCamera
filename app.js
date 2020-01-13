@@ -408,7 +408,7 @@ function takeImage() {
 	'-fli', 'auto',	//Anti flickering
 	'-gps',
 	//'-vf',		//Vertial flip
-	'-roi', '0.25,0.25,0.75,0.75',
+	//'-roi', '0.25,0.25,0.75,0.75',
 	//'-r',		//Raw layer
         '-awb', 'incandescent', //'fluorescent', 
         '-o', getAbsoluteImagePath()   // path + name
