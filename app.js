@@ -399,8 +399,8 @@ function execute( cmd, callback ) {
 
 function takeImage() {
     var args = [
-        '-w', 2460,   // width
-        '-h', 1848,  // height
+        //'-w', 2460,   // width
+        //'-h', 1848,  // height
         //'-t', 100,  // how long should taking the picture take?
         '-q', 100,     // quality
         '-ISO', 100,    //ISO
