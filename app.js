@@ -4,7 +4,7 @@ var version = '1.38';
 var args = process.argv.slice(2);
 
 var httpServer = 'http://192.168.10.100:8080';
-var socketServer = 'http://192.168.10.100:3000/';
+var socketServer = 'http://192.168.10.100:3000';
 if (typeof args[0] != 'undefined') {		
     socketServer = 'http://' + args[0];		
 }
@@ -15,6 +15,7 @@ if (typeof args[1] != 'undefined') {
 var spawn = require('child_process').spawn;
 var exec  = require('child_process').exec;
 var childProcess;
+var ts;
 
 var path = require('path');
 
@@ -24,6 +25,7 @@ var fs = require('fs');
 
 var FormData = require('form-data');
 var request  = require('request');
+var timesync = require('timesync');
 
 var os     = require('os');
 
@@ -69,6 +71,13 @@ function boot() {
     console.log("Startup complete");
 }
 
+socket.on('disconnect', function(){
+    console.log("Disconnected");
+    //ts.off('change');
+    ts.destroy();
+    ts = undefined;
+});
+    
 socket.on('connect', function(){
     console.log('A socket connection was made');
     
@@ -85,27 +94,65 @@ socket.on('connect', function(){
     //}
     
     // Setup a regular heartbeat interval
+    
+        // create a timesync instance
+    if ( undefined == ts ){
+        ts = timesync.create({
+            server: socketServer+'/timesync',
+            interval: 900000    //Sync every 15mins
+        });
+         
+        // get notified on changes in the offset
+        //ts.on('change', function (offset) {
+         //   console.log('Time Sync : changed offset: ' + offset + ' ms');
+        //});
+    }
+    
     var heartbeatIntervalID = setInterval(heartbeat, 1000);
 });
 
 socket.on('take-photo', function(data){
     console.log("Taking a photo");
-    
-    photoStartTime  = Date.now();
+
     lastReceiveTime = data.time
     takeId          = data.takeId;
     
-    takeImage();
+    console.log( "Time difference : " + (ts.now() - lastReceiveTime).toString());
+    
+    //For better sync
+    photoStartTime  = lastReceiveTime + data.countDown;
+        
+    var time_delay = photoStartTime - ts.now();
+
+    if ( !isNaN( time_delay ) && time_delay > 100 ){
+        setTimeout( takeImage, time_delay - 1 );    //Deduct 1ms for latency
+        console.log("Delay : " + time_delay.toString());
+    } else {    //Take the image asap
+        photoStartTime  = Date.now();
+        takeImage();
+    }
 });
 
 socket.on('take-photo-DSLR', function(data){
-    console.log("Taking a photo");
+    console.log("Taking a photo(DSLR");
     
-    photoStartTime  = Date.now();
     lastReceiveTime = data.time
     takeId          = data.takeId;
     
-    takeImage_DSLR();
+    console.log( "Time difference (DSLR): " + (ts.now() - lastReceiveTime).toString());
+    
+    //For better sync
+    photoStartTime  = lastReceiveTime + data.countDown;
+        
+    var time_delay = photoStartTime - ts.now();
+
+    if ( !isNaN( time_delay ) && time_delay > 100 ){
+        setTimeout( takeImage_DSLR, time_delay - 1 );    //Deduct 1ms for latency
+        console.log("Delay : " + time_delay.toString());
+    } else {    //Take the image asap
+        photoStartTime  = Date.now();
+        takeImage_DSLR();
+    }
 });
 
 socket.on('execute-command', function(data){
@@ -404,7 +451,7 @@ function takeImage() {
         //'-t', 100,  // how long should taking the picture take?
         '-q', 100,     // quality
         //'-ISO', 100,    //ISO
-        '-ss', 16667,  //Shutter speed
+        '-ss', 33333,  //Shutter speed
 	'-fli', 'auto',	//Anti flickering
 	'-gps',
 	//'-vf',		//Vertial flip
@@ -446,6 +493,9 @@ function takeImage_DSLR() {
             "--set-config", "artist=Lip",
             "--set-config", "capturetarget=1",
             "--set-config", "focusmode=0",
+            "--set-config", "/main/settings/autopoweroff=True",
+            "--set-config-value", "/main/imgsettings/iso=800",
+            //"--set-config-value", "/main/capturesettings/aperture=5.6",
             "--force-overwrite",
             //"--debug", "--debug-logfile=/home/pi/gphoto2-logfile.txt",
             "--capture-image-and-download",
