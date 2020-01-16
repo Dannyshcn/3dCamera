@@ -13,9 +13,9 @@ if (typeof args[1] != 'undefined') {
 }
 
 var spawn = require('child_process').spawn;
+var spawnSync = require('child_process').spawnSync;
 var exec  = require('child_process').exec;
 var childProcess;
-var ts;
 
 var path = require('path');
 
@@ -25,7 +25,6 @@ var fs = require('fs');
 
 var FormData = require('form-data');
 var request  = require('request');
-var timesync = require('timesync');
 
 var os     = require('os');
 
@@ -46,6 +45,7 @@ var cameraName = null;
 var ipAddress  = null;
 var hostName   = null;
 var extraWebCams = 4;
+var DSLR_BatteryLevel = "Disconnect";
 
 function boot() {
     console.log("Starting");
@@ -73,9 +73,6 @@ function boot() {
 
 socket.on('disconnect', function(){
     console.log("Disconnected");
-    //ts.off('change');
-    ts.destroy();
-    ts = undefined;
 });
     
 socket.on('connect', function(){
@@ -95,20 +92,11 @@ socket.on('connect', function(){
     
     // Setup a regular heartbeat interval
     
-        // create a timesync instance
-    if ( undefined == ts ){
-        ts = timesync.create({
-            server: socketServer+'/timesync',
-            interval: 900000    //Sync every 15mins
-        });
-         
-        // get notified on changes in the offset
-        //ts.on('change', function (offset) {
-         //   console.log('Time Sync : changed offset: ' + offset + ' ms');
-        //});
-    }
+    heartbeat();
+    update_DSLR_Battery_Info();
     
     var heartbeatIntervalID = setInterval(heartbeat, 1000);
+    var heartbeatIntervalID_battery = setInterval(update_DSLR_Battery_Info, 900000);
 });
 
 socket.on('take-photo', function(data){
@@ -117,20 +105,8 @@ socket.on('take-photo', function(data){
     lastReceiveTime = data.time
     takeId          = data.takeId;
     
-    console.log( "Time difference : " + (ts.now() - lastReceiveTime).toString());
-    
-    //For better sync
-    photoStartTime  = lastReceiveTime + data.countDown;
-        
-    var time_delay = photoStartTime - ts.now();
-
-    if ( !isNaN( time_delay ) && time_delay > 100 ){
-        setTimeout( takeImage, time_delay - 1 );    //Deduct 1ms for latency
-        console.log("Delay : " + time_delay.toString());
-    } else {    //Take the image asap
-        photoStartTime  = Date.now();
-        takeImage();
-    }
+    photoStartTime  = Date.now();
+    takeImage();
 });
 
 socket.on('take-photo-DSLR', function(data){
@@ -139,20 +115,10 @@ socket.on('take-photo-DSLR', function(data){
     lastReceiveTime = data.time
     takeId          = data.takeId;
     
-    console.log( "Time difference (DSLR): " + (ts.now() - lastReceiveTime).toString());
+    photoStartTime  = Date.now();
+    takeImage_DSLR();
     
-    //For better sync
-    photoStartTime  = lastReceiveTime + data.countDown;
-        
-    var time_delay = photoStartTime - ts.now();
-
-    if ( !isNaN( time_delay ) && time_delay > 100 ){
-        setTimeout( takeImage_DSLR, time_delay - 1 );    //Deduct 1ms for latency
-        console.log("Delay : " + time_delay.toString());
-    } else {    //Take the image asap
-        photoStartTime  = Date.now();
-        takeImage_DSLR();
-    }
+    update_DSLR_Battery_Info();     //Update the battery info
 });
 
 socket.on('execute-command', function(data){
@@ -215,7 +181,8 @@ function heartbeat() {
     if (ipAddress == null) {
         lookupIp();
     }
-    socket.emit('camera-online', {name: cameraName, ipAddress: ipAddress, hostName: hostName, version: version, updateInProgress: updateInProgress});
+      
+    socket.emit('camera-online', {name: cameraName, ipAddress: ipAddress, hostName: hostName, version: version, updateInProgress: updateInProgress, DSLR_battery: DSLR_BatteryLevel});
 }
 
 function getAbsoluteImagePath() {
@@ -238,6 +205,24 @@ function lookupIp() {
         }
         ipAddress = iface.address;
       });
+    });
+}
+
+function update_DSLR_Battery_Info() {
+    kill_gphoto2_before_process(function(code){
+        var process = spawnSync('gphoto2 --get-config batterylevel', {
+            shell: true,
+        });
+        var info = process.stdout.toString().split(/[\r\n]+/);
+        for ( var i=0; i<info.length; ++i ){
+        //console.log( info[i].split(/(\s+)/));
+            var items = info[i].split(/(\s+)/);
+            if ( 'Current:' == items[0]  ){
+                DSLR_BatteryLevel = items[2];
+                return;
+            }
+        }
+        DSLR_BatteryLevel = "Disconnect";
     });
 }
 
@@ -442,6 +427,33 @@ function execute( cmd, callback ) {
     
     process.stdin.write( cmd + '\n' );
     process.stdin.end();
+}
+
+function kill_gphoto2_before_process( callback ){
+    var _process;
+	var isWin = process.platform === "win32";
+	if ( !isWin ) {
+		_process = spawn('bash');
+	}else{
+		_process = spawn('cmd');
+	}
+    _process.on('exit', callback);
+    
+    _process.stdout.on('data', function(data){
+        var info = data.toString().split(/[\r\n]+/);
+        for ( var i=0; i<info.length; ++i ){
+            //console.log( info[i].split(/(\s+)/));
+            var pid  = info[i].split(/(\s+)/)[2];
+            if ( undefined == pid ){
+                continue;
+            }
+            //console.log( info[i] + "\nPID is at " + i + " is " + pid );
+            _process.stdin.write( 'kill ' + pid + "\n" );
+        }
+
+        _process.stdin.end();   //End the stream
+    });
+    _process.stdin.write( 'ps aux | grep -e gvfs-gphoto2 -e gvfsd-gphoto2\n' );
 }
 
 function takeImage() {
