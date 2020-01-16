@@ -117,8 +117,6 @@ socket.on('take-photo-DSLR', function(data){
     
     photoStartTime  = Date.now();
     takeImage_DSLR();
-    
-    update_DSLR_Battery_Info();     //Update the battery info
 });
 
 socket.on('execute-command', function(data){
@@ -520,9 +518,10 @@ function takeImage_DSLR() {
         // The image should take about 5 seconds, if its going after 10 kill it!
         setTimeout(function(){ 
             imageProcess.kill();
-            }, 5000);
+            }, 10000);
 
         imageProcess.on('exit', sendImage_DSLR);
+        imageProcess.on('exit', update_DSLR_Battery_Info);     //Update the battery info
     });
     
     _process.stdout.on('data', function(data){
@@ -540,7 +539,6 @@ function takeImage_DSLR() {
         _process.stdin.end();   //End the stream
     });
     _process.stdin.write( 'ps aux | grep -e gvfs-gphoto2 -e gvfsd-gphoto2\n' );
-    
 }
 
 function takeImage_WebCam(data) {
