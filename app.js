@@ -1,5 +1,5 @@
 
-var version = '1.38';
+var version = '1.39';
 
 var args = process.argv.slice(2);
 
@@ -461,7 +461,7 @@ function takeImage() {
         //'-t', 100,  // how long should taking the picture take?
         '-q', 100,     // quality
         //'-ISO', 100,    //ISO
-        '-ss', 33333,  //Shutter speed
+        '-ss', 16667,  //Shutter speed
 	'-fli', 'auto',	//Anti flickering
 	'-gps',
 	//'-vf',		//Vertial flip
@@ -504,7 +504,7 @@ function takeImage_DSLR() {
             "--set-config", "capturetarget=1",
             "--set-config", "focusmode=0",
             "--set-config", "/main/settings/autopoweroff=True",
-            "--set-config-value", "/main/imgsettings/iso=800",
+            "--set-config-value", "/main/imgsettings/iso=400",
             //"--set-config-value", "/main/capturesettings/aperture=5.6",
             "--force-overwrite",
             //"--debug", "--debug-logfile=/home/pi/gphoto2-logfile.txt",
