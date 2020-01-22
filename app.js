@@ -110,6 +110,7 @@ socket.on('connect', function(){
         //console.log('changed offset: ' + offset + ' ms');
         //});
     }
+    ts.sync();
 
     // Setup a regular heartbeat interval
     
