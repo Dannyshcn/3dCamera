@@ -25,6 +25,7 @@ var fs = require('fs');
 
 var FormData = require('form-data');
 var request  = require('request');
+var timesync = require('timesync');
 
 var os     = require('os');
 
@@ -33,6 +34,7 @@ var marvel = require('marvel-characters')
 
 var lastReceiveTime;
 var photoStartTime;
+var photoStartTime_DSLR;
 var takeId;
 var updateInProgress = false;
 
@@ -46,6 +48,7 @@ var ipAddress  = null;
 var hostName   = null;
 var extraWebCams = 4;
 var DSLR_BatteryLevel = "Disconnect";
+var ts = null; //For time sync
 
 function boot() {
     console.log("Starting");
@@ -72,6 +75,11 @@ function boot() {
 }
 
 socket.on('disconnect', function(){
+    if ( ts ){
+        ts.destroy();
+        ts = null;
+    }
+
     console.log("Disconnected");
 });
     
@@ -90,6 +98,19 @@ socket.on('connect', function(){
     //    }
     //}
     
+    // create a timesync instance
+    if ( null == ts ){
+        ts = timesync.create({
+            server: socketServer+'/timesync',
+            interval: 300000
+        });
+        
+        // get notified on changes in the offset
+        //ts.on('change', function (offset) {
+        //console.log('changed offset: ' + offset + ' ms');
+        //});
+    }
+
     // Setup a regular heartbeat interval
     
     heartbeat();
@@ -99,24 +120,76 @@ socket.on('connect', function(){
     var heartbeatIntervalID_battery = setInterval(update_DSLR_Battery_Info, 900000);
 });
 
+socket.on('timeSync-test', function(data){
+    var commandIssueTime = data.time;
+    var expectedRunningTime = commandIssueTime + data.countDown;
+    var commandRecievedTime = ts.now();
+    var offset = commandRecievedTime - commandIssueTime;
+    var waitTime         = expectedRunningTime - commandRecievedTime - 1;
+    
+    if ( waitTime < 100 ){
+        console.log( "The client cock is way ahead manager clock");
+        waitTime = 0;
+    }
+    
+    console.log( "Cmd Recieved delta: " + offset + " Time to wait: " + waitTime );
+    setTimeout( function(){
+        console.log("Time to Feed back");
+        msg = { expectedRunTime: expectedRunningTime, networkLatency: offset, executionTime: ts.now() }
+        socket.emit('timeSync-return', msg );
+    }, waitTime );
+});
+
 socket.on('take-photo', function(data){
     console.log("Taking a photo");
 
     lastReceiveTime = data.time
     takeId          = data.takeId;
     
-    photoStartTime  = Date.now();
-    takeImage();
+    var expectedRunningTime = lastReceiveTime + data.countDown;
+    var commandRecievedTime = ts.now();
+
+    var waitTime         = expectedRunningTime - commandRecievedTime - 1;
+    
+    if ( waitTime < 0 ){    //Act immediately
+        waitTime = 0;
+    }
+    
+    setTimeout( function(){
+        photoStartTime  = ts.now();
+        takeImage();
+        socket.emit('timeSync-return', { 
+            networkLatency: commandRecievedTime - lastReceiveTime,
+            executeDelta: photoStartTime- expectedRunningTime 
+        } );
+    }, waitTime );
 });
 
-socket.on('take-photo-DSLR', function(data){
-    console.log("Taking a photo(DSLR");
-    
+socket.on('take-photo-DSLR', function(data){    
+    kill_gphoto2_before_process(function(code){
+        console.log("Taking a photo(DSLR)");
+    });
+            
     lastReceiveTime = data.time
     takeId          = data.takeId;
     
-    photoStartTime  = Date.now();
-    takeImage_DSLR();
+    var expectedRunningTime = lastReceiveTime + data.countDown;
+    var commandRecievedTime = ts.now();
+
+    var waitTime         = expectedRunningTime - commandRecievedTime - 1;
+    
+    if ( waitTime < 0 ){    //Act immediately
+        waitTime = 0;
+    }
+        
+    setTimeout( function(){
+        photoStartTime_DSLR = ts.now();
+        takeImage_DSLR();
+        socket.emit('timeSync-return', { 
+            networkLatency_DSLR: commandRecievedTime - lastReceiveTime,
+            executeDelta_DSLR: photoStartTime_DSLR - expectedRunningTime 
+        } );
+    }, waitTime );
 });
 
 socket.on('execute-command', function(data){
@@ -478,67 +551,31 @@ function takeImage() {
 }
 
 function takeImage_DSLR() {
-    var args = [ 
-        //'/home/pi/3dCamera/camera_capture.py',  // path + name
-        //getAbsoluteImagePath()
-    ];
-    //execute( 'python /home/pi/3dCamera/camera_capture.py ' + getAbsoluteImagePath(), sendImage);
-    //var imageProcess = spawn('python', args);
+    var args = [
+        "--set-config", "datetime=now",
+        "--set-config", "artist=Lip",
+        "--set-config", "capturetarget=1",
+        "--set-config", "focusmode=0",
+        "--set-config", "/main/settings/autopoweroff=True",
+        "--set-config-value", "/main/imgsettings/iso=400",
+        //"--set-config-value", "/main/capturesettings/aperture=5.6",
+        "--force-overwrite",
+        //"--debug", "--debug-logfile=/home/pi/gphoto2-logfile.txt",
+        "--capture-image-and-download",
+        "--filename="+getAbsoluteImagePath_DSLR()];
+    
+    var imageProcess = spawn('gphoto2', args);
+    //imageProcess.stdout.on('data', function(data) {
+    //  console.log( "--" + data.toString());
+    //});
     // The image should take about 5 seconds, if its going after 10 kill it!
-    //setTimeout(function(){ imageProcess.kill()}, 7000);
-    
-    //imageProcess.on('exit', sendImage);
-    
-    //@Lip copied from execute()
-	var _process;
-	var isWin = process.platform === "win32";
-	if ( !isWin ) {
-		_process = spawn('bash');
-	}else{
-		_process = spawn('cmd');
-	}
-    _process.on('exit', function(code){
-        args = [
-            "--set-config", "datetime=now",
-            "--set-config", "artist=Lip",
-            "--set-config", "capturetarget=1",
-            "--set-config", "focusmode=0",
-            "--set-config", "/main/settings/autopoweroff=True",
-            "--set-config-value", "/main/imgsettings/iso=400",
-            //"--set-config-value", "/main/capturesettings/aperture=5.6",
-            "--force-overwrite",
-            //"--debug", "--debug-logfile=/home/pi/gphoto2-logfile.txt",
-            "--capture-image-and-download",
-            "--filename="+getAbsoluteImagePath_DSLR()];
-        
-        var imageProcess = spawn('gphoto2', args);
-        //imageProcess.stdout.on('data', function(data) {
-        //  console.log( "--" + data.toString());
-        //});
-        // The image should take about 5 seconds, if its going after 10 kill it!
-        setTimeout(function(){ 
-            imageProcess.kill();
-            }, 10000);
+    setTimeout(function(){ 
+        imageProcess.kill();
+        }, 10000);
 
-        imageProcess.on('exit', sendImage_DSLR);
-        imageProcess.on('exit', update_DSLR_Battery_Info);     //Update the battery info
-    });
-    
-    _process.stdout.on('data', function(data){
-        var info = data.toString().split(/[\r\n]+/);
-        for ( var i=0; i<info.length; ++i ){
-            //console.log( info[i].split(/(\s+)/));
-            var pid  = info[i].split(/(\s+)/)[2];
-            if ( undefined == pid ){
-                continue;
-            }
-            //console.log( info[i] + "\nPID is at " + i + " is " + pid );
-            _process.stdin.write( 'kill ' + pid + "\n" );
-        }
+    imageProcess.on('exit', sendImage_DSLR);
+    imageProcess.on('exit', update_DSLR_Battery_Info);     //Update the battery info
 
-        _process.stdin.end();   //End the stream
-    });
-    _process.stdin.write( 'ps aux | grep -e gvfs-gphoto2 -e gvfsd-gphoto2\n' );
 }
 
 function takeImage_WebCam(data) {
