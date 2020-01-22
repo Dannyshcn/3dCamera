@@ -1,5 +1,5 @@
 
-var version = '1.39';
+var version = '1.40';
 
 var args = process.argv.slice(2);
 
@@ -48,7 +48,10 @@ var ipAddress  = null;
 var hostName   = null;
 var extraWebCams = 4;
 var DSLR_BatteryLevel = "Disconnect";
-var ts = null; //For time sync
+var ts = timesync.create({
+    server: socketServer+'/timesync',
+    interval: 300000
+});
 
 function boot() {
     console.log("Starting");
@@ -75,11 +78,6 @@ function boot() {
 }
 
 socket.on('disconnect', function(){
-    if ( ts ){
-        ts.destroy();
-        ts = null;
-    }
-
     console.log("Disconnected");
 });
     
@@ -98,18 +96,6 @@ socket.on('connect', function(){
     //    }
     //}
     
-    // create a timesync instance
-    if ( null == ts ){
-        ts = timesync.create({
-            server: socketServer+'/timesync',
-            interval: 300000
-        });
-        
-        // get notified on changes in the offset
-        //ts.on('change', function (offset) {
-        //console.log('changed offset: ' + offset + ' ms');
-        //});
-    }
     ts.sync();
 
     // Setup a regular heartbeat interval
