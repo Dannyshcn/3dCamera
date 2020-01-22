@@ -170,10 +170,10 @@ socket.on('take-photo-DSLR', function(data){
         console.log("Taking a photo(DSLR)");
     });
             
-    lastReceiveTime = data.time
+    var lastReceiveTime_DSLR = data.time
     takeId          = data.takeId;
     
-    var expectedRunningTime = lastReceiveTime + data.countDown;
+    var expectedRunningTime = lastReceiveTime_DSLR + data.countDown;
     var commandRecievedTime = ts.now();
 
     var waitTime         = expectedRunningTime - commandRecievedTime - 1;
@@ -186,7 +186,7 @@ socket.on('take-photo-DSLR', function(data){
         photoStartTime_DSLR = ts.now();
         takeImage_DSLR();
         socket.emit('timeSync-return', { 
-            networkLatency_DSLR: commandRecievedTime - lastReceiveTime,
+            networkLatency_DSLR: commandRecievedTime - lastReceiveTime_DSLR,
             executeDelta_DSLR: photoStartTime_DSLR - expectedRunningTime 
         } );
     }, waitTime );
