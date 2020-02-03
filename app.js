@@ -615,7 +615,29 @@ function takeImage_test( waitTime ) {
     
     process.on('exit', function(code){
         clearTimeout( watcher );
-        sendImages(code);
+        
+        var exifTool = spawn('bash');
+        
+        exifTool.on('exit', sendImages );
+        
+        exifTool.stdout.on('data', function(data){
+                console.log('stdout: ' + data);
+        });
+
+        exifTool.stdin.write("exiftool " +
+                         "-FNumber=2.0 " +
+                         "-Make=RaspberryPi " +
+                         "-Model=RP_imx219 " + 
+                         "-ApertureValue=2.0 " +
+                         "-MaxApertureValue=2 " +
+                         "-Artist=Lip " +
+                         "-FocalLength=3mm " +
+                         "-overwrite_original_in_place " +
+                         imageFolder+"/*\n"
+                         );
+                     
+        exifTool.stdin.end();
+        
     });
 }
 
@@ -658,8 +680,10 @@ function takeImage_DSLR_test( waitTime ) {
     }, 60000);
     
     var imagePath = path.join(__dirname, 'dslr_img');
+    console.log( imagePath );
     if (!fs.existsSync(imagePath)){
         fs.mkdirSync(imagePath);
+        fs.chownSync(imagePath, 1000, 1000);
     }
     process.on('exit', function(){
         var args = [
@@ -675,8 +699,9 @@ function takeImage_DSLR_test( waitTime ) {
     
     process.stdin.write( 'gphoto2 --shell\n' );
     process.stdin.write( 'set-config-index drivemode=0\n' );
-    
+        
     setTimeout( function() {
+        process.stdin.write( 'set-config-index capturetarget=1\n' );
         process.stdin.write( 'set-config-index eosremoterelease=6\n' );
     }, waitTime - ts.now() + timeEnter - 1500 ); //focus 1.5s before image capture
     
