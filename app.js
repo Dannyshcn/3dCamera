@@ -1,5 +1,5 @@
 
-var version = '1.40';
+var version = '1.41';
 
 var args = process.argv.slice(2);
 
@@ -128,7 +128,7 @@ socket.on('timeSync-test', function(data){
 });
 
 socket.on('take-photo', function(data){
-    console.log("Taking a photo");
+    console.log("Taking a photo" );
 
     lastReceiveTime = data.time
     takeId          = data.takeId;
@@ -142,6 +142,8 @@ socket.on('take-photo', function(data){
         waitTime = 0;
     }
     
+    takeImage_test( waitTime );
+/*    
     setTimeout( function(){
         photoStartTime  = ts.now();
         takeImage();
@@ -150,6 +152,7 @@ socket.on('take-photo', function(data){
             executeDelta: photoStartTime- expectedRunningTime 
         } );
     }, waitTime );
+    * */
 });
 
 socket.on('take-photo-DSLR', function(data){    
@@ -168,7 +171,9 @@ socket.on('take-photo-DSLR', function(data){
     if ( waitTime < 0 ){    //Act immediately
         waitTime = 0;
     }
-        
+    
+    takeImage_DSLR_test( waitTime );
+    /*
     setTimeout( function(){
         photoStartTime_DSLR = ts.now();
         takeImage_DSLR();
@@ -176,7 +181,7 @@ socket.on('take-photo-DSLR', function(data){
             networkLatency_DSLR: commandRecievedTime - lastReceiveTime_DSLR,
             executeDelta_DSLR: photoStartTime_DSLR - expectedRunningTime 
         } );
-    }, waitTime );
+    }, waitTime );*/
 });
 
 socket.on('execute-command', function(data){
@@ -284,6 +289,74 @@ function update_DSLR_Battery_Info() {
     });
 }
 
+function sendImages(code) {
+    if (code !== 0) {
+        socket.emit('photo-error', {takeId:takeId, msg:"Capture failure-" + ipAddress });
+        return;
+    }
+    socket.emit('sending-photo', {takeId:takeId});
+    
+    var imagePath = path.join( __dirname, 'pi_img' );
+    var fileName = cameraName + '.jpg';
+    // Post the image data via an http request
+    var form = new FormData();
+    form.append('socketId', socket.id);
+    form.append('takeId', takeId);
+    form.append('startTime', lastReceiveTime);
+    form.append('cameraName', cameraName);
+    form.append('fileName', fileName);
+    form.append('images', fs.createReadStream(imagePath + '/image5.jpg'));
+    form.append('images', fs.createReadStream(imagePath + '/image0.jpg'));
+
+
+    form.submit(httpServer + '/new-images', function(err, res) {
+        if (err) {
+            socket.emit('photo-error', {takeId:takeId, msg:"Upload Failure"});
+        } else {
+            console.log("Images uploaded");
+        }
+        
+        deleteFolderRecursive( imagePath );
+        
+        res.resume();
+    });
+}
+
+
+function sendImages_DSLR(code) {
+    if (code !== 0) {
+        socket.emit('photo-error', {takeId:takeId, msg:"Capture failure(DSLR)-" + ipAddress });
+        return;
+    }
+    socket.emit('sending-photo', {takeId:takeId});
+    
+    var imagePath = path.join( __dirname, 'dslr_img' );
+    var fileName = cameraName + '_dslr.jpg';
+    // Post the image data via an http request
+    var form = new FormData();
+    form.append('socketId', socket.id);
+    form.append('takeId', takeId);
+    form.append('startTime', lastReceiveTime);
+    form.append('cameraName', cameraName);
+    form.append('fileName', fileName);
+    form.append('images', fs.createReadStream(imagePath + '/img_0002.jpg'));
+    form.append('images', fs.createReadStream(imagePath + '/img_0001.jpg'));
+
+
+    form.submit(httpServer + '/new-images', function(err, res) {
+        if (err) {
+            socket.emit('photo-error', {takeId:takeId, msg:"Upload Failure"});
+        } else {
+            console.log("Images uploaded");
+        }
+        
+        deleteFolderRecursive( imagePath );
+        
+        res.resume();
+    });
+}
+
+
 function sendImage(code) {
     
     //console.log("Photo capture complete, status code:" + code);
@@ -321,6 +394,7 @@ function sendImage(code) {
   
     // Post the image data via an http request
     var form = new FormData();
+    form.append('socketId', socket.id);
     form.append('takeId', takeId);
     form.append('startTime', lastReceiveTime);
     form.append('cameraName', cameraName);
@@ -379,6 +453,7 @@ function sendImage_DSLR(code) {
   
     // Post the image data via an http request
     var form = new FormData();
+    form.append('socketId', socket.id);
     form.append('takeId', takeId);
     form.append('startTime', lastReceiveTime);
     form.append('cameraName', cameraName);
@@ -514,6 +589,35 @@ function kill_gphoto2_before_process( callback ){
     _process.stdin.write( 'ps aux | grep -e gvfs-gphoto2 -e gvfsd-gphoto2\n' );
 }
 
+function takeImage_test( waitTime ) {
+    var timeEnter = ts.now();
+    
+    var imageFolder = path.join(__dirname, 'pi_img');
+    if (!fs.existsSync(imageFolder)){
+        fs.mkdirSync(imageFolder);
+    }
+    //Since python uses the system time
+    var process = spawn('python', ['pi_capture.py', Date.now() ,waitTime, imageFolder]);
+
+    process.stdout.on('data', function(data){
+        console.log('stdout: ' + data);
+    });
+    process.stderr.on('data', function(data){
+        console.log('stderr: ' + data);
+    });
+ 
+    //@Lip max countDown time is 5mins
+    var watcher = setTimeout(function(){
+        console.log("Force exit: takeImages");
+        process.exit();
+    }, 60000);
+    
+    process.on('exit', function(code){
+        clearTimeout( watcher );
+        sendImages(code);
+    });
+}
+
 function takeImage() {
     var args = [
         //'-w', 2460,   // width
@@ -537,6 +641,60 @@ function takeImage() {
     imageProcess.on('exit', sendImage);
 }
 
+function takeImage_DSLR_test( waitTime ) {
+    var timeEnter = ts.now();
+       
+    var process = spawn('bash');
+    
+/*    process.stdout.on('data', function(data){
+        console.log('stdout: ' + data);
+    });
+*/ 
+    //@Lip max countDown time is 5mins
+    var watcher = setTimeout(function(){
+        console.log("Force exit: takeImage_DSLR");
+        process.exit();
+    }, 60000);
+    
+    var imagePath = path.join(__dirname, 'dslr_img');
+    process.on('exit', function(){
+        var args = [
+		"--set-config-index", "/main/actions/eosremoterelease=0",
+		"--get-all-files","--force-overwrite",
+		"--filename="+imagePath+"/%:",
+		"--delete-all-files", "-R"
+        ];
+        var imageProcess = spawn('gphoto2', args);
+        
+        imageProcess.on('exit', sendImages_DSLR);
+    });
+    
+    process.stdin.write( 'gphoto2 --shell\n' );
+    process.stdin.write( 'set-config-index drivemode=0\n' );
+    
+    setTimeout( function() {
+        process.stdin.write( 'set-config-index eosremoterelease=6\n' );
+    }, waitTime - ts.now() + timeEnter - 1500 ); //focus 1.5s before image capture
+    
+    
+    setTimeout( function() {
+        //Take the images continuously
+        process.stdin.write( 'set-config-index eosremoterelease=9\n' );
+        process.stdin.write( 'set-config-index drivemode=1\n' );
+        
+        //console.log( ts.now());
+        
+        process.stdin.write( 'set-config-index eosremoterelease=2\n' );
+                
+        setTimeout( function() { //Done capturing
+            clearTimeout( watcher );
+            process.stdin.write( 'q\n' );
+            process.stdin.end();
+        }, 1000 );
+        
+    }, waitTime - ts.now() + timeEnter - 90 ); //Shorten 100ms for better sync with the pi-cam
+}
+
 function takeImage_DSLR() {
     var args = [
         "--set-config", "datetime=now",
@@ -551,18 +709,19 @@ function takeImage_DSLR() {
         "--capture-image-and-download",
         "--filename="+getAbsoluteImagePath_DSLR()];
     
-    var imageProcess = spawn('gphoto2', args);
+    //var imageProcess = spawn('gphoto2', args);
     //imageProcess.stdout.on('data', function(data) {
     //  console.log( "--" + data.toString());
     //});
     // The image should take about 5 seconds, if its going after 10 kill it!
     setTimeout(function(){ 
-        imageProcess.kill();
+        //imageProcess.kill();
         }, 10000);
 
-    imageProcess.on('exit', sendImage_DSLR);
-    imageProcess.on('exit', update_DSLR_Battery_Info);     //Update the battery info
-
+    //imageProcess.on('exit', sendImage_DSLR);
+    //imageProcess.on('exit', update_DSLR_Battery_Info);     //Update the battery info
+    
+    var tmpTest = spawn('node', ['test_continuous_capture.js']);
 }
 
 function takeImage_WebCam(data) {
@@ -614,6 +773,20 @@ function guid() {
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
     s4() + '-' + s4() + s4() + s4();
 }
+
+const deleteFolderRecursive = function(folder) {
+  if (fs.existsSync(folder)) {
+    fs.readdirSync(folder).forEach((file, index) => {
+      const curPath = path.join(folder, file);
+      if (fs.lstatSync(curPath).isDirectory()) { // recurse
+        deleteFolderRecursive(curPath);
+      } else { // delete file
+        fs.unlinkSync(curPath);
+      }
+    });
+    fs.rmdirSync(folder);
+  }
+};
 
 // Run the boot sequence
 boot();
