@@ -1,5 +1,5 @@
 
-var version = '1.41';
+var version = '1.41a';
 
 var args = process.argv.slice(2);
 
@@ -597,7 +597,8 @@ function takeImage_test( waitTime ) {
         fs.mkdirSync(imageFolder);
     }
     //Since python uses the system time
-    var process = spawn('python', ['pi_capture.py', Date.now() ,waitTime, imageFolder]);
+    var codePath = path.join(__dirname, "pi_capture.py");
+    var process = spawn('python', [codePath, Date.now() ,waitTime, imageFolder]);
 
     process.stdout.on('data', function(data){
         console.log('stdout: ' + data);
