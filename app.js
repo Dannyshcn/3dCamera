@@ -1,5 +1,5 @@
 
-var version = '1.41a';
+var version = '1.42';
 
 var args = process.argv.slice(2);
 
@@ -658,6 +658,9 @@ function takeImage_DSLR_test( waitTime ) {
     }, 60000);
     
     var imagePath = path.join(__dirname, 'dslr_img');
+    if (!fs.existsSync(imageFolder)){
+        fs.mkdirSync(imageFolder);
+    }
     process.on('exit', function(){
         var args = [
 		"--set-config-index", "/main/actions/eosremoterelease=0",
