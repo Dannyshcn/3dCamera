@@ -658,8 +658,8 @@ function takeImage_DSLR_test( waitTime ) {
     }, 60000);
     
     var imagePath = path.join(__dirname, 'dslr_img');
-    if (!fs.existsSync(imageFolder)){
-        fs.mkdirSync(imageFolder);
+    if (!fs.existsSync(imagePath)){
+        fs.mkdirSync(imagePath);
     }
     process.on('exit', function(){
         var args = [
