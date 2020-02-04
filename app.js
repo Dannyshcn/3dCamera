@@ -1,5 +1,5 @@
 
-var version = '1.42';
+var version = '1.42a';
 
 var args = process.argv.slice(2);
 
@@ -699,6 +699,7 @@ function takeImage_DSLR_test( waitTime ) {
     
     process.stdin.write( 'gphoto2 --shell\n' );
     process.stdin.write( 'set-config-index drivemode=0\n' );
+    process.stdin.write( 'set-config-index iso=3\n' );
         
     setTimeout( function() {
         process.stdin.write( 'set-config-index capturetarget=1\n' );

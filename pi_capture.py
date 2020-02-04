@@ -9,9 +9,9 @@ deltaTime = (receivedTime - calledTime).total_seconds()
 #print( targetRunTime )
 waitTime = float( sys.argv[2] ) * 0.001
 folder = sys.argv[3];
-with picamera.PiCamera(resolution=(1640, 1232), framerate=40) as camera:
-  camera.shutter_speed = 25000
-  #camera.iso = 200
+with picamera.PiCamera(resolution=(3280, 2464), framerate=15) as camera:
+  camera.shutter_speed = 66666
+  camera.iso = 80
   camera.awb_mode = 'off'
   camera.exposure_mode = 'sports'
   camera.awb_gains = [Fraction(173,128), Fraction(591, 256)]
