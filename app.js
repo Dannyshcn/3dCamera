@@ -1,5 +1,5 @@
 
-var version = '1.42a';
+var version = '1.42b';
 
 var args = process.argv.slice(2);
 
@@ -305,7 +305,7 @@ function sendImages(code) {
     form.append('startTime', lastReceiveTime);
     form.append('cameraName', cameraName);
     form.append('fileName', fileName);
-    form.append('images', fs.createReadStream(imagePath + '/image5.jpg'));
+    form.append('images', fs.createReadStream(imagePath + '/image2.jpg'));
     form.append('images', fs.createReadStream(imagePath + '/image0.jpg'));
 
 
