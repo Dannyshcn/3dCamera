@@ -615,7 +615,7 @@ function takeImage_test( waitTime ) {
     
     process.on('exit', function(code){
         clearTimeout( watcher );
-        
+        sendImages( code );/*
         var exifTool = spawn('bash');
         
         exifTool.on('exit', sendImages );
@@ -637,7 +637,7 @@ function takeImage_test( waitTime ) {
                          );
                      
         exifTool.stdin.end();
-        
+        */
     });
 }
 
