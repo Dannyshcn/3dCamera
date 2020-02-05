@@ -1,5 +1,5 @@
 
-var version = '1.42b';
+var version = '1.43';
 
 var args = process.argv.slice(2);
 
@@ -48,10 +48,7 @@ var ipAddress  = null;
 var hostName   = null;
 var extraWebCams = 4;
 var DSLR_BatteryLevel = "Disconnect";
-var ts = timesync.create({
-    server: socketServer+'/timesync',
-    interval: 300000
-});
+var ts = null;
 
 function boot() {
     console.log("Starting");
@@ -78,6 +75,8 @@ function boot() {
 }
 
 socket.on('disconnect', function(){
+    ts.destroy();
+    ts = null;
     console.log("Disconnected");
 });
     
@@ -96,7 +95,25 @@ socket.on('connect', function(){
     //    }
     //}
     
-    ts.sync();
+    //Start the time synchronization instance
+    if ( null === ts ){
+        ts = timesync.create({
+            server: socketServer+'/timesync',
+            interval: 3000
+        });
+        // get notified on changes in the offset
+        ts.on('change', function (offset) {
+            console.log('offset from system time:', offset, 'ms');
+            ts.destroy();
+            ts = timesync.create({
+                server: socketServer+'/timesync',
+                interval: 900000
+            });
+        });
+    } else {
+        console.warn("Warning: TimeSync instance is initialized before connecting to server!");
+    }
+    
 
     // Setup a regular heartbeat interval
     
