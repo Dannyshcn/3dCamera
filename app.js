@@ -99,17 +99,17 @@ socket.on('connect', function(){
     if ( null === ts ){
         ts = timesync.create({
             server: socketServer+'/timesync',
-            interval: 3000
+            interval: 900000
         });
         // get notified on changes in the offset
-        ts.on('change', function (offset) {
+        /*ts.on('change', function (offset) {
             console.log('offset from system time:', offset, 'ms');
             ts.destroy();
             ts = timesync.create({
                 server: socketServer+'/timesync',
                 interval: 900000
             });
-        });
+        });*/
     } else {
         console.warn("Warning: TimeSync instance is initialized before connecting to server!");
     }
@@ -152,10 +152,16 @@ socket.on('take-photo', function(data){
     
     var expectedRunningTime = lastReceiveTime + data.countDown;
     var commandRecievedTime = ts.now();
-
+    
     var waitTime         = expectedRunningTime - commandRecievedTime - 1;
     
     if ( waitTime < 0 ){    //Act immediately
+        console.log( ts );
+        console.log("lastRecieveTime : " + new Date(lastReceiveTime));
+        console.log("expectedRunningTime : " + new Date(expectedRunningTime));
+        console.log("commandRecievedTime : " + new Date(commandRecievedTime));
+        console.log( "node wait time: " + waitTime );
+    
         waitTime = 0;
     }
     
@@ -186,6 +192,11 @@ socket.on('take-photo-DSLR', function(data){
     var waitTime         = expectedRunningTime - commandRecievedTime - 1;
     
     if ( waitTime < 0 ){    //Act immediately
+        console.log( ts );
+        console.log("lastRecieveTime(DSLR) : " + new Date(lastReceiveTime));
+        console.log("expectedRunningTime(DSLR) : " + new Date(expectedRunningTime));
+        console.log("commandRecievedTime(DSLR) : " + new Date(commandRecievedTime));
+        console.log( "node wait time(DSLR): " + waitTime );
         waitTime = 0;
     }
     
