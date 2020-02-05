@@ -750,7 +750,7 @@ function takeImage_DSLR_test( waitTime ) {
             process.stdin.end();
         }, 1000 );
         
-    }, waitTime - ts.now() + timeEnter - 90 ); //Shorten 100ms for better sync with the pi-cam
+    }, waitTime - ts.now() + timeEnter );
 }
 
 function takeImage_DSLR() {
