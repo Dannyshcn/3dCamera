@@ -99,7 +99,7 @@ socket.on('connect', function(){
     if ( null === ts ){
         ts = timesync.create({
             server: socketServer+'/timesync',
-            interval: 900000
+            interval: 10000
         });
         // get notified on changes in the offset
         /*ts.on('change', function (offset) {
