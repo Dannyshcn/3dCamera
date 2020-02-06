@@ -11,10 +11,10 @@ waitTime = float( sys.argv[2] ) * 0.001
 folder = sys.argv[3];
 with picamera.PiCamera(resolution=(3280, 2464), framerate=15) as camera:
   camera.shutter_speed = 20000
-  camera.iso = 60
-  camera.awb_mode = 'off'
+  camera.iso = 80
+  camera.awb_mode = 'incandescent'
   camera.exposure_mode = 'sports'
-  camera.awb_gains = [Fraction(173,128), Fraction(591, 256)]
+  #camera.awb_gains = [Fraction(173,128), Fraction(591, 256)]
   camera.start_preview()
   files = [folder + "/image" + str(i) + ".jpg" for i in range(3)]
   waitTime = waitTime - deltaTime - (datetime.datetime.now() - receivedTime).total_seconds()
