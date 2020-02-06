@@ -2,3 +2,5 @@
 /pi_img
 /dslr_img
 device-name
+*.py
+!pi_capture.py

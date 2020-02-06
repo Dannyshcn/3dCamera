@@ -223,14 +223,43 @@ socket.on('execute-command', function(data){
 
 socket.on('lights-switch', function(data){
     if ( fs.existsSync('/home/pi/3dCamera/led_control.py')) { //file exists
-        // execute( 'python led_control.py ' + data  );
-       if ( 'on' == data ) {
+ 
+        lastReceiveTime = data.time
+        takeId          = data.takeId;
+        
+        var expectedRunningTime = lastReceiveTime + data.countDown;
+        var commandRecievedTime = ts.now();
+        
+        var waitTime         = expectedRunningTime - commandRecievedTime - 1;
+        
+        if ( waitTime < 0 ){    //Act immediately
+            console.log( ts );
+            console.log("lastRecieveTime : " + new Date(lastReceiveTime));
+            console.log("expectedRunningTime : " + new Date(expectedRunningTime));
+            console.log("commandRecievedTime : " + new Date(commandRecievedTime));
+            console.log( "node wait time: " + waitTime );
+        
+            waitTime = 0;
+        }
+        var args = [
+            path.join(__dirname,'led_control.py'),
+            '-s', data.state,
+            '-w', ( waitTime + 500 ) * 0.001, //Python time in sec
+            '-d', 3,
+            '-ct', Date.now() * 0.001//Python time in sec
+        ];
+        var lightprocess = spawn('python', args);
+        lightprocess.stdout.on('data', function(data){
+            console.log(data.toString());
+        });
+        lightprocess.stderr.on('data', function(data){
+            console.log("Err: " + data.toString());
+        });
+        /*if ( 'on' == data ) {
            execute( 'python /home/pi/3dCamera/led_control.py -s on' );
-       }else{
+        }else{
            execute( 'pkill -15 -f "python /home/pi/3dCamera/led_control.py"' );
-       }
-
-       console.log( "Lights :" + data );
+       }*/
     }
 });
 
